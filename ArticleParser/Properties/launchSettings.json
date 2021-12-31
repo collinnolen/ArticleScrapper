@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PageParser": {
+      "commandName": "Project",
+      "commandLineArgs": "-p https://www.nytimes.com/article/voting-rights-tracker.html"
+    }
+  }
+}
