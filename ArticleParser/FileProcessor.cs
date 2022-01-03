@@ -8,8 +8,13 @@ namespace ArticleParser
 {
     internal class FileProcessor
     {
-        public static void Save()
+        public static void Save(string directory, string text)
         {
+            using (StreamWriter sw = new StreamWriter(File.Create(directory)))
+            {
+                sw.Write(text);
+            }
+
             Environment.ExpandEnvironmentVariables("");
         }
     }

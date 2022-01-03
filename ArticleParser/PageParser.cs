@@ -41,6 +41,7 @@ namespace ArticleParser
             FilterOutTextPre(ref contentString);
             TitleAdjustment(ref contentString);
 
+            //Delele the entire html element
             List<string> htmlElementsDeleteContents = new List<string>()
             {
                 "script",
@@ -60,6 +61,22 @@ namespace ArticleParser
                 RemoveHtmlDeleteContents(htmlElement, ref contentString);
             }
 
+            //Replace the html element, keep the inner text
+            Dictionary<Tuple<string, string, HtmlOpions>, bool> htmlElementsRepalceContents = new Dictionary<Tuple<string, string, HtmlOpions>, bool>
+            {
+                { new Tuple<string, string, HtmlOpions>("p", "\n", HtmlOpions.OPEN), true },
+            };
+
+            while (htmlElementsRepalceContents.Values.Contains(true))
+            {
+                foreach (Tuple<string, string, HtmlOpions> key in htmlElementsRepalceContents.Keys)
+                {
+                    if (htmlElementsRepalceContents[key] == true)
+                        htmlElementsRepalceContents[key] = ReplaceHtmlElementWithText(key.Item1, key.Item2, key.Item3, ref contentString);
+                }
+            }
+
+            //Delete the html tag, keep the inner text
             Dictionary<string, bool> htmlElementsKeepContents = new Dictionary<string, bool>
             {
                 { "div", true },
@@ -95,6 +112,8 @@ namespace ArticleParser
 
             FilterOutTextPost(ref contentString);
 
+            FileProcessor.Save("./", contentString);
+
             totalTime.Stop();
             Log.Logger.Debug($"Finished Parsing Page in {totalTime.Elapsed.TotalSeconds} seconds");
         }
@@ -113,6 +132,37 @@ namespace ArticleParser
 
             contentString = contentString.Replace(contentString.Substring(timeIndexOpenStart, timeIndexOpenEnd - timeIndexOpenStart), " ");
             contentString = contentString.Replace("</time>", ". ");
+        }
+
+        public static bool ReplaceHtmlElementWithText(string htmlElement, string replacementText, HtmlOpions option,  ref string contentString)
+        {
+            bool openFound = false;
+            bool closeFound = false;
+
+            if (contentString.Contains($"<{htmlElement}") && (option == HtmlOpions.OPEN || option == HtmlOpions.BOTH))
+            {
+                int htmlElementOpenStart = contentString.IndexOf($"<{htmlElement}");
+                int htmlElementOpenEnd = contentString.IndexOf(@">", htmlElementOpenStart) + 1;
+
+                if (htmlElementOpenStart > -1 && htmlElementOpenStart < htmlElementOpenEnd)
+                    contentString = contentString.Replace(contentString.Substring(htmlElementOpenStart, htmlElementOpenEnd - htmlElementOpenStart), replacementText);
+
+                openFound = true;
+            }
+
+            if (contentString.Contains($"</{htmlElement}") && (option == HtmlOpions.CLOSE || option == HtmlOpions.BOTH))
+            {
+                int htmlElementCloseStart = contentString.IndexOf($"</{htmlElement}>");
+                int htmlElementCloseEnd = htmlElementCloseStart + htmlElement.Length + 3;
+
+                if (htmlElementCloseStart > 0)
+                    contentString = contentString.Replace(contentString.Substring(htmlElementCloseStart, htmlElementCloseEnd - htmlElementCloseStart), replacementText);
+
+                closeFound = true;
+            }
+
+            return openFound || closeFound;
+
         }
 
         private static bool RemoveHtmlKeepContents(string htmlElement, ref string contentString)
